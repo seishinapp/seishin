@@ -1,0 +1,15 @@
+# Go
+/bin/
+*.exe
+
+# Rust
+/media/target/
+
+# Node
+node_modules/
+dist/
+
+# Local dev
+*.local
+.env
+.DS_Store
