@@ -39,7 +39,7 @@ func run(args []string) error {
 
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
 	role := fs.String("role", "", "service to run alone (default: every implemented service)")
-	addr := fs.String("addr", ":8080", "address the API gateway listens on")
+	addr := fs.String("addr", ":7700", "address the API gateway listens on")
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
