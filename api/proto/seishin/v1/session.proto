@@ -1,0 +1,92 @@
+// Identity and session establishment: the handshake described in
+// docs/protocol.md section 3, expressed as Canonical Platform API messages.
+// The native protocol adds framing on top of these same messages; it defines
+// no session semantics of its own.
+syntax = "proto3";
+
+package seishin.v1;
+
+option go_package = "github.com/seishinapp/seishin/api/proto/seishin/v1;seishinv1";
+
+// Identity is derived from an Ed25519 public key, never issued by a server.
+// See docs/architecture.md section 6.
+message Identity {
+  // Ed25519 public key, 32 bytes. The root of identity.
+  bytes public_key = 1;
+  // Canonical user ID, deterministically derived from public_key.
+  string user_id = 2;
+  // "@user:home.example", set only when a home provider issued a token
+  // during authentication. Empty for guests and keys with no home provider.
+  string handle = 3;
+}
+
+message ClientInfo {
+  string name = 1;
+  string version = 2;
+  string platform = 3;
+}
+
+message ServerInfo {
+  string name = 1;
+  string motd = 2;
+}
+
+message HelloRequest {
+  string protocol_version = 1;
+  ClientInfo client_info = 2;
+}
+
+message HelloResponse {
+  string server_version = 1;
+  ServerInfo server_info = 2;
+  // Server-generated nonce; the Authenticate signature must cover it.
+  bytes nonce = 3;
+  repeated string auth_methods = 4;
+}
+
+message AuthenticateRequest {
+  bytes identity_public_key = 1;
+  // The nonce returned by Hello. The server rejects an unknown or
+  // already-consumed nonce.
+  bytes nonce = 2;
+  // Signature over nonce, proving possession of the private key. Over the
+  // native CXP/1 transport this additionally covers the transport transcript
+  // hash, binding the proof to one connection — see docs/protocol.md
+  // section 3. This HTTP surface has no equivalent transcript to bind to.
+  bytes signature = 3;
+  // Optional OIDC token from a home provider. Omitted for guests and for
+  // keys with no home provider.
+  string home_provider_token = 4;
+  // Required when identity_public_key is a freshly generated guest key.
+  string guest_display_name = 5;
+}
+
+message AuthenticateResponse {
+  Session session = 1;
+}
+
+message Session {
+  string session_id = 1;
+  Identity identity = 2;
+  // Named capability strings computed from the identity's roles at connect
+  // time. Never permission integers. See docs/architecture.md section 2.
+  repeated string capabilities = 3;
+  // Opaque token for Resume. Valid for 60s after disconnect, per
+  // docs/protocol.md section 8.
+  string resume_token = 4;
+}
+
+message ResumeRequest {
+  string session_id = 1;
+  string resume_token = 2;
+}
+
+message ResumeResponse {
+  Session session = 1;
+}
+
+service SessionService {
+  rpc Hello(HelloRequest) returns (HelloResponse);
+  rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
+  rpc Resume(ResumeRequest) returns (ResumeResponse);
+}

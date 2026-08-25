@@ -1,0 +1,107 @@
+// Spaces, channels, members, and roles. Capabilities are named strings on a
+// role, never permission integers — see docs/architecture.md section 2.
+syntax = "proto3";
+
+package seishin.v1;
+
+option go_package = "github.com/seishinapp/seishin/api/proto/seishin/v1;seishinv1";
+
+message Space {
+  string space_id = 1;
+  string name = 2;
+}
+
+enum ChannelKind {
+  CHANNEL_KIND_UNSPECIFIED = 0;
+  CHANNEL_KIND_TEXT = 1;
+  CHANNEL_KIND_VOICE = 2;
+}
+
+// SpatialPolicy governs how clients render pose data on a voice channel.
+// See docs/protocol.md section 6.
+enum SpatialPolicy {
+  SPATIAL_POLICY_UNSPECIFIED = 0;
+  SPATIAL_POLICY_FLAT = 1;
+  SPATIAL_POLICY_ROOM = 2;
+  SPATIAL_POLICY_WORLD = 3;
+}
+
+message Channel {
+  string channel_id = 1;
+  string space_id = 2;
+  string name = 3;
+  ChannelKind kind = 4;
+  // Meaningful only when kind == CHANNEL_KIND_VOICE.
+  SpatialPolicy spatial_policy = 5;
+}
+
+message Member {
+  string user_id = 1;
+  repeated string role_ids = 2;
+}
+
+message Role {
+  string role_id = 1;
+  string name = 2;
+  // Named capability strings, e.g. "channel.create". Never a permission
+  // integer.
+  repeated string capabilities = 3;
+}
+
+message ListSpacesRequest {}
+
+message ListSpacesResponse {
+  repeated Space spaces = 1;
+}
+
+message GetSpaceRequest {
+  string space_id = 1;
+}
+
+message GetSpaceResponse {
+  Space space = 1;
+}
+
+message ListChannelsRequest {
+  string space_id = 1;
+}
+
+message ListChannelsResponse {
+  repeated Channel channels = 1;
+}
+
+message CreateChannelRequest {
+  string space_id = 1;
+  string name = 2;
+  ChannelKind kind = 3;
+  SpatialPolicy spatial_policy = 4;
+}
+
+message CreateChannelResponse {
+  Channel channel = 1;
+}
+
+message ListMembersRequest {
+  string space_id = 1;
+}
+
+message ListMembersResponse {
+  repeated Member members = 1;
+}
+
+message ListRolesRequest {
+  string space_id = 1;
+}
+
+message ListRolesResponse {
+  repeated Role roles = 1;
+}
+
+service DirectoryService {
+  rpc ListSpaces(ListSpacesRequest) returns (ListSpacesResponse);
+  rpc GetSpace(GetSpaceRequest) returns (GetSpaceResponse);
+  rpc ListChannels(ListChannelsRequest) returns (ListChannelsResponse);
+  rpc CreateChannel(CreateChannelRequest) returns (CreateChannelResponse);
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse);
+}

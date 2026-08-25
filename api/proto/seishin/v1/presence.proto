@@ -1,0 +1,41 @@
+// Ephemeral presence: held in NATS JetStream KV + memory, never Postgres.
+// A server restart is expected to reset presence with no correctness impact
+// beyond a brief gap. See docs/architecture.md section 5.2.
+syntax = "proto3";
+
+package seishin.v1;
+
+option go_package = "github.com/seishinapp/seishin/api/proto/seishin/v1;seishinv1";
+
+enum PresenceStatus {
+  PRESENCE_STATUS_UNSPECIFIED = 0;
+  PRESENCE_STATUS_ONLINE = 1;
+  PRESENCE_STATUS_AWAY = 2;
+  PRESENCE_STATUS_OFFLINE = 3;
+}
+
+message PresenceState {
+  string user_id = 1;
+  PresenceStatus status = 2;
+  // Voice channel_id the user is currently connected to, empty if none.
+  string channel_id = 3;
+}
+
+message SetPresenceRequest {
+  PresenceStatus status = 1;
+}
+
+message SetPresenceResponse {}
+
+message ListPresenceRequest {
+  string space_id = 1;
+}
+
+message ListPresenceResponse {
+  repeated PresenceState presence = 1;
+}
+
+service PresenceService {
+  rpc SetPresence(SetPresenceRequest) returns (SetPresenceResponse);
+  rpc ListPresence(ListPresenceRequest) returns (ListPresenceResponse);
+}
