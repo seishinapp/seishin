@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  go:
+    name: Go control plane (${{ matrix.composition }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Both compositions run the same suite against the same code, per
+        # docs/architecture.md 5.1: composition is a wiring decision, not a
+        # separate code path. This matrix exists so a future divergence
+        # between single-binary and distributed wiring fails CI immediately.
+        composition: [single-binary, distributed]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go test ./...
+        env:
+          SEISHIN_COMPOSITION: ${{ matrix.composition }}
+
+  rust:
+    name: Rust media plane
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: media
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo check --workspace
+      - run: cargo test --workspace
